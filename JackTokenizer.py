@@ -15,8 +15,8 @@ class JackTokenizer:
     # Jack Language Grammar
 
     A Jack file is a stream of characters. If the file represents a
-    valid program, it can be tokenized into a stream of valid tokens. The
-    tokens may be separated by an arbitrary number of whitespace characters, 
+    valid program, it can be tokenized into a stream of  tokens. The
+    tokens may be separated by an arbitrary number of whitesvalidpace characters, 
     and comments, which are ignored. There are three possible comment formats: 
     /* comment until closing */ , /** API comment until closing */ , and 
     // comment until the line’s end.
@@ -101,7 +101,21 @@ class JackTokenizer:
         # Your code goes here!
         # A good place to start is to read all the lines of the input:
         # input_lines = input_stream.read().splitlines()
-        pass
+        self.input_lines = input_stream.read().splitlines()
+        self.current_row_index = -1
+        self.current_token = ""
+        self.tokens = []
+        self.keywords = ['class', 'constructor', 'function', 'method', 'field',
+                         'static', 'var', 'int', 'char', 'boolean', 'void', 'true',
+                         'false', 'null', 'this', 'let', 'do', 'if', 'else',
+                         'while', 'return']
+        self.symbols = ['{', '}', '(', ')', '[', ']', '.', ',', ';', '+',
+                        '-', '*', '/', '&', '|', '<', '>', '=', '~', '^', '#']
+        self.keywordConstants = ['true', 'false', 'null', 'this']
+        self.unaryOps = ['-', '~', '^', '#']
+        self.ops = ['+', '-', '*', '/', '&', '|', '<', '>', '=']
+        self.lines_length = len(self.input_lines)
+        self.current_line_tokens = []
 
     def has_more_tokens(self) -> bool:
         """Do we have more tokens in the input?
@@ -109,25 +123,113 @@ class JackTokenizer:
         Returns:
             bool: True if there are more tokens, False otherwise.
         """
-        # Your code goes here!
-        pass
+        return self.current_row_index < self.lines_length
 
-    def advance(self) -> None:
+    def delete_current_command(self) -> None:
+        """Deletes the current command."""
+        self.input_lines.pop(self.current_row_index)
+        self.current_row_index = self.current_row_index - 1
+        self.commands_length = self.commands_length - 1
+
+    def advance(self) -> bool:
         """Gets the next token from the input and makes it the current token. 
         This method should be called if has_more_tokens() is true. 
         Initially there is no current token.
         """
-        # Your code goes here!
-        pass
+        if self.current_line_tokens != []:
+            self.current_token = self.current_line_tokens.pop(0)
+            return True
+        self.current_row_index += 1
+        if not self.has_more_tokens():
+            return False
+        self.current_token = self.input_lines[self.current_row_index]
+        if not self.handle_comments_and_blanks():
+            return False
+        if not self.handle_comment_block():
+            return False
+        self.current_token = self._remove_comments_and_blanks(self.current_token)
+        self.split_line_to_tokens()
+        self.current_token = self.current_line_tokens.pop(0)
+        return True
 
+    def split_line_to_tokens(self) -> None:
+        lst = []
+        lst = self.current_token.split()
+        word_until_symbol = ""
+        for word in lst:
+            index = 0
+            word_until_symbol = ""
+            while (index < len(word)):
+                char = word[index]
+                if char not in self.symbols:
+                    word_until_symbol += char
+                else:
+                    self.current_line_tokens.append(word_until_symbol)
+                    word_until_symbol = ""
+                    self.current_line_tokens.append(char)
+                index += 1
+        self.current_line_tokens.append(word_until_symbol) if word_until_symbol != "" else None
+
+    def handle_comment_block(self) -> bool:
+        """Handles multi-line comments in the input."""
+        if not self.current_token.startswith("/**"):
+            return False
+        while not self.current_token.endswith("*/"):
+            self.delete_current_command()
+            self.current_row_index += 1
+            if not self.has_more_tokens():
+                return False
+            self.current_token = self.input_lines[self.current_row_index]
+        return True
+
+    def handle_comments_and_blanks(self) -> bool:
+        """Handles comments and blank lines in the input."""
+        while self.current_token.strip() == "" or self.current_token.startswith("//") or self.current_token.startswith("/*"):
+            self.delete_current_command()
+            self.current_row_index += 1
+            if not self.has_more_tokens():
+                return False
+            self.current_token = self.input_lines[self.current_row_index]
+        return True
+
+    def _remove_comments_and_blanks(self, command: str) -> str:
+        """Removes comments and blank lines from the command.
+
+        Args:
+            command (str): the command to remove comments and blanks from.
+
+        Returns:
+            str: the command without comments.
+        """
+        if "//" in command:
+            return "".join(command.split("//")[0].strip())
+        return command
+    
     def token_type(self) -> str:
+        
         """
         Returns:
             str: the type of the current token, can be
             "KEYWORD", "SYMBOL", "IDENTIFIER", "INT_CONST", "STRING_CONST"
         """
         # Your code goes here!
-        pass
+        if self.current_token in self.keywords:
+            return "KEYWORD"
+        if self.current_token in self.symbols:
+            return "SYMBOL"
+        if self.current_token.isdigit():
+            return "INT_CONST"
+        if self.current_token.startswith('"') and self.current_token.endswith('"'):
+            return "STRING_CONST"
+        if self.isidentifier():
+            return "IDENTIFIER"
+        return "UNKNOWN"
+
+    def isidentifier(self) -> bool:
+        """
+        Checks if the current token is a valid identifier.
+        """
+        return (not self.current_token[0].isdigit())
 
     def keyword(self) -> str:
         """
