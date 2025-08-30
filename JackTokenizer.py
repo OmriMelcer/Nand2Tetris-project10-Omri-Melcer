@@ -164,11 +164,13 @@ class JackTokenizer:
                 if char not in self.symbols:
                     word_until_symbol += char
                 else:
-                    self.current_line_tokens.append(word_until_symbol)
+                    if word_until_symbol != "":
+                        self.current_line_tokens.append(word_until_symbol)
                     word_until_symbol = ""
                     self.current_line_tokens.append(char)
                 index += 1
-        self.current_line_tokens.append(word_until_symbol) if word_until_symbol != "" else None
+        if word_until_symbol != "":
+            self.current_line_tokens.append(word_until_symbol)
 
     def handle_comment_block(self) -> bool:
         """Handles multi-line comments in the input."""
@@ -240,8 +242,7 @@ class JackTokenizer:
             "BOOLEAN", "CHAR", "VOID", "VAR", "STATIC", "FIELD", "LET", "DO", 
             "IF", "ELSE", "WHILE", "RETURN", "TRUE", "FALSE", "NULL", "THIS"
         """
-        # Your code goes here!
-        pass
+        return self.current_token.upper()
 
     def symbol(self) -> str:
         """
@@ -252,8 +253,7 @@ class JackTokenizer:
             symbol: '{' | '}' | '(' | ')' | '[' | ']' | '.' | ',' | ';' | '+' | 
               '-' | '*' | '/' | '&' | '|' | '<' | '>' | '=' | '~' | '^' | '#'
         """
-        # Your code goes here!
-        pass
+        return self.current_token[0]
 
     def identifier(self) -> str:
         """
@@ -265,8 +265,7 @@ class JackTokenizer:
                   starting with a digit. You can assume keywords cannot be
                   identifiers, so 'self' cannot be an identifier, etc'.
         """
-        # Your code goes here!
-        pass
+        return self.current_token
 
     def int_val(self) -> int:
         """
@@ -276,8 +275,7 @@ class JackTokenizer:
             Recall that integerConstant was defined in the grammar like so:
             integerConstant: A decimal number in the range 0-32767.
         """
-        # Your code goes here!
-        pass
+        return int(self.current_token)
 
     def string_val(self) -> str:
         """
@@ -288,5 +286,4 @@ class JackTokenizer:
             StringConstant: '"' A sequence of Unicode characters not including 
                       double quote or newline '"'
         """
-        # Your code goes here!
-        pass
+        return self.current_token[1:-1]
