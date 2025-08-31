@@ -129,7 +129,7 @@ class JackTokenizer:
         """Deletes the current command."""
         self.input_lines.pop(self.current_row_index)
         self.current_row_index = self.current_row_index - 1
-        self.commands_length = self.commands_length - 1
+        self.lines_length = self.lines_length - 1
 
     def advance(self) -> bool:
         """Gets the next token from the input and makes it the current token. 
