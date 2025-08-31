@@ -202,9 +202,9 @@ class JackTokenizer:
 
     def handle_comment_block(self) -> bool:
         """Handles multi-line comments in the input."""
-        if not self.current_token.startswith("/**"):
+        if not self.current_token.strip().startswith("/**"):
             return True
-        while not self.current_token.endswith("*/"):
+        while not self.current_token.strip().endswith("*/"):
             self.delete_current_command()
             self.current_row_index += 1
             if not self.has_more_tokens():
@@ -214,7 +214,7 @@ class JackTokenizer:
 
     def handle_comments_and_blanks(self) -> bool:
         """Handles comments and blank lines in the input."""
-        while self.current_token.strip() == "" or self.current_token.startswith("//") or self.current_token.startswith("/*"):
+        while self.current_token.strip() == "" or self.current_token.strip().startswith("//") or self.current_token.strip().startswith("/**"):
             self.delete_current_command()
             self.current_row_index += 1
             if not self.has_more_tokens():

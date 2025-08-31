@@ -102,11 +102,13 @@ class CompilationEngine:
         self.output_stream.write("<parameterList>\n")
         self.input_stream.advance()
         while not self.input_stream.token_type == "SYMBOL" and self.input_stream.symbol() != ')':
-            self.output_stream.write(f"<{self.input_stream.token_type().lower()}>{self.input_stream.identifier()}</{self.input_stream.token_type().lower()}>\n")
+            self.output_stream.write(f"<{self.input_stream.token_type().lower()}>{self.input_stream.identifier()}</{self.input_stream.token_type().lower()}>\n") #type / className
             self.input_stream.advance()
-            self.output_stream.write(f"<identifier> {self.input_stream.identifier()} </identifier>\n")
+            self.output_stream.write(f"<identifier> {self.input_stream.identifier()} </identifier>\n") #varName
             self.input_stream.advance()
-            #self.output_stream.write(f"<symbol> {self.input_stream.symbol()} </symbol>\n")
+            if self.input_stream.token_type() == "SYMBOL" and self.input_stream.symbol() == ",":
+                self.output_stream.write(f"<symbol> {self.input_stream.symbol()} </symbol>\n")
+                self.input_stream.advance()
         self.output_stream.write("</parameterList>\n")
 
     def compile_var_dec(self) -> None:
