@@ -131,7 +131,7 @@ class CompilationEngine:
             elif self.input_stream.keyword() == "return":
                 self.compile_return()
             # TODO: check if advanced is need here.
-            self.input_stream.advance()
+            # self.input_stream.advance()
         self.output_stream.write("</statements>\n")
 
     def compile_do(self) -> None:
@@ -139,29 +139,30 @@ class CompilationEngine:
         # Your code goes here!
         self.output_stream.write("<doStatement>\n")
         self.output_stream.write(f"<keyword> {self.input_stream.keyword()} </keyword>\n") #do
+        self.output_stream.advance()
         self.compile_subroutine_call()
-        self.input_stream.advance()
         self.output_stream.write(f"<symbol> {self.input_stream.symbol()} </symbol>\n") #;
+        self.input_stream.advance()
         self.output_stream.write("</doStatement>\n")
 
-    def compile_subroutine_call(self) -> None:
+    def compile_subroutine_call(self, first_token: str = "") -> None:
         """
-        starts by using advanced i.e in the token before the subroutine call.
-        returns at the ) token as current
+        Compiles a subroutine call.
         """
-        self.input_stream.advance()
-        self.output_stream.write(f"<identifier> {self.input_stream.identifier()} </identifier>\n")
-        class_or_subroutine = self.input_stream.identifier() #className | subroutineName
-        self.input_stream.advance()
+        if first_token == "":
+            first_token = self.input_stream.identifier()
+            self.input_stream.advance()
+        self.output_stream.write(f"<identifier> {first_token} </identifier>\n") #className | subroutineName
         self.output_stream.write(f"<symbol> {self.input_stream.symbol()} </symbol>\n")
         while self.input_stream.symbol() == ".":
             self.input_stream.advance()
             self.output_stream.write(f"<identifier> {self.input_stream.identifier()} </identifier>\n")
             self.input_stream.advance()
-            self.output_stream.write(f"<symbol> {self.input_stream.symbol()} </symbol>\n") # . or ) in the last iteration
+            self.output_stream.write(f"<symbol> {self.input_stream.symbol()} </symbol>\n") # . or ( in the last iteration
         self.input_stream.advance()
         self.compile_expression_list()
         self.output_stream.write(f"<symbol> {self.input_stream.symbol()} </symbol>\n") # )
+        self.input_stream.advance()
 
 
     def compile_let(self) -> None:
@@ -181,35 +182,85 @@ class CompilationEngine:
             self.output_stream.write(f"<symbol> {self.input_stream.symbol()} </symbol>\n") # =
         self.input_stream.advance()
         self.compile_expression()
-        
         self.output_stream.write(f"<symbol> {self.input_stream.symbol()} </symbol>\n") # ;
+        self.input_stream.advance()
         self.output_stream.write("</letStatement>\n")
 
     def compile_while(self) -> None:
-        """Compiles a while statement."""
-        # Your code goes here!
-        pass
+        """Compiles a while statement.
+            receive it with current token as 'while'
+            returns it with current token as the after }
+        """
+        self.output_stream.write("<whileStatement>\n")
+        self.output_stream.write(f"<keyword> {self.input_stream.keyword()} </keyword>\n") #while
+        self.input_stream.advance()
+        self.output_stream.write(f"<symbol> {self.input_stream.symbol()} </symbol>\n") # (
+        self.input_stream.advance()
+        self.compile_expression()
+        self.output_stream.write(f"<symbol> {self.input_stream.symbol()} </symbol>\n") # )
+        self.input_stream.advance()
+        self.output_stream.write(f"<symbol> {self.input_stream.symbol()} </symbol>\n") # {
+        self.input_stream.advance()
+        self.compile_statements()
+        self.output_stream.write(f"<symbol> {self.input_stream.symbol()} </symbol>\n") # }
+        self.input_stream.advance()
+        self.output_stream.write("</whileStatement>\n")
 
     def compile_return(self) -> None:
         """Compiles a return statement."""
-        # Your code goes here!
-        pass
+        self.output_stream.write("<returnStatement>\n")
+        self.output_stream.write(f"<keyword> {self.input_stream.keyword()} </keyword>\n") #return
+        self.input_stream.advance()
+        self.compile_expression()
+        self.output_stream.write(f"<symbol> {self.input_stream.symbol()} </symbol>\n") # ;
+        self.input_stream.advance()
+        self.output_stream.write("</returnStatement>\n")
 
     def compile_if(self) -> None:
         """Compiles a if statement, possibly with a trailing else clause."""
         # Your code goes here!
-        pass
+        self.output_stream.write("<ifStatement>\n")
+        self.output_stream.write(f"<keyword> {self.input_stream.keyword()} </keyword>\n") #if
+        self.input_stream.advance()
+        self.output_stream.write(f"<symbol> {self.input_stream.symbol()} </symbol>\n") # (
+        self.input_stream.advance()
+        self.compile_expression()
+        self.output_stream.write(f"<symbol> {self.input_stream.symbol()} </symbol>\n") # )
+        self.input_stream.advance()
+        self.output_stream.write(f"<symbol> {self.input_stream.symbol()} </symbol>\n") # {
+        self.input_stream.advance()
+        self.compile_statements()
+        self.output_stream.write(f"<symbol> {self.input_stream.symbol()} </symbol>\n") # }
+        self.input_stream.advance()
+        # Optional else clause
+        if self.input_stream.keyword() == "else":
+            self.output_stream.write(f"<keyword> {self.input_stream.keyword()} </keyword>\n") # else
+            self.input_stream.advance()
+            self.output_stream.write(f"<symbol> {self.input_stream.symbol()} </symbol>\n") # {
+            self.input_stream.advance()
+            self.compile_statements()
+            self.output_stream.write(f"<symbol> {self.input_stream.symbol()} </symbol>\n") # }
+            self.input_stream.advance()
+        self.output_stream.write("</ifStatement>\n")
 
     def compile_expression(self) -> None:
         """Compiles an expression.
-        Should finish at the ) or ] token as current
+        Should finish at the ) or ] or , token as current
         starts after advancing to the first token
         """
-        # Your code goes here!
-        pass
+        self.output_stream.write("<expression>\n")
+        self.compile_term()
+        while self.input_stream.token_type() == "SYMBOL" and self.input_stream.symbol() in self.input_stream.op:
+            self.output_stream.write(f"<symbol> {self.input_stream.symbol()} </symbol>\n")
+            self.input_stream.advance()
+            self.compile_term()
+        self.output_stream.write("</expression>\n")
+        
 
     def compile_term(self) -> None:
         """Compiles a term. 
+        the function starts with the current token as the first token of the term.
+        The function returns with the current token after the term.
         This routine is faced with a slight difficulty when
         trying to decide between some of the alternative parsing rules.
         Specifically, if the current token is an identifier, the routing must
@@ -218,10 +269,50 @@ class CompilationEngine:
         to distinguish between the three possibilities. Any other token is not
         part of this term and should not be advanced over.
         """
-        # Your code goes here!
-        pass
+        first_token = ""
+        self.output_stream.write("<term>\n")
+        if self.input_stream.token_type() == "INT_CONST":
+            self.output_stream.write(f"<integerConstant> {self.input_stream.int_val()} </integerConstant>\n") #integerConstant
+            self.input_stream.advance()
+        elif self.input_stream.token_type() == "STRING_CONST":
+            self.output_stream.write(f"<stringConstant> {self.input_stream.string_val()} </stringConstant>\n") #stringConstant
+            self.input_stream.advance()
+        elif self.input_stream.token_type() == "KEYWORD" and self.input_stream.keyword() in ["true", "false", "null", "this"]:
+            self.output_stream.write(f"<keyword> {self.input_stream.keyword()} </keyword>\n")  #keywordConstant
+            self.input_stream.advance()
+        elif self.input_stream.token_type() == "SYMBOL" and self.input_stream.symbol() == "(":
+            self.output_stream.write(f"<symbol> {self.input_stream.symbol()} </symbol>\n")
+            self.input_stream.advance()
+            self.compile_expression()
+            self.output_stream.write(f"<symbol> {self.input_stream.symbol()} </symbol>\n") # )
+            self.input_stream.advance()
+        elif self.input_stream.token_type() == "SYMBOL" and self.input_stream.symbol() in self.input_stream.unary_op:
+            self.output_stream.write(f"<symbol> {self.input_stream.symbol()} </symbol>\n")
+            self.input_stream.advance()
+            self.compile_term()
+        else:
+            first_token = self.input_stream.identifier()
+            self.input_stream.advance()
+            if self.input_stream.token_type() == "SYMBOL" and self.input_stream.symbol() == "[":
+                self.output_stream.write(f"<identifier> {first_token} </identifier>\n")
+                self.output_stream.write(f"<symbol> {self.input_stream.symbol()} </symbol>\n") # [
+                self.input_stream.advance()
+                self.compile_expression()
+                self.output_stream.write(f"<symbol> {self.input_stream.symbol()} </symbol>\n") # ]
+                self.input_stream.advance()
+            elif self.input_stream.token_type() == "SYMBOL" and self.input_stream.symbol() in ["(", "."]:
+                self.compile_subroutine_call(first_token = first_token)
+            else:
+                self.output_stream.write(f"<identifier> {first_token} </identifier>\n")
+                self.input_stream.advance()
+        self.output_stream.write("</term>\n")
 
     def compile_expression_list(self) -> None:
-        """Compiles a (possibly empty) comma-separated list of expressions."""
-        # Your code goes here!
-        pass
+        self.output_stream.write("<expressionList>\n")
+        while self.input_stream.token_type() == "SYMBOL" and self.input_stream.symbol() != ")":
+            self.compile_expression()
+            if self.input_stream.token_type() == "SYMBOL" and self.input_stream.symbol() == ",":
+                self.output_stream.write(f"<symbol> {self.input_stream.symbol()} </symbol>\n")
+                self.input_stream.advance()
+        self.output_stream.write("</expressionList>\n")
+        
