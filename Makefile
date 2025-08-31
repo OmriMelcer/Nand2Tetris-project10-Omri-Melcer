@@ -41,6 +41,10 @@
 all:
 	chmod a+x *
 
+zip:
+	zip project10.zip *.py AUTHORS Makefile JackAnalyzer
+
+
 # This file is part of nand2tetris, as taught in The Hebrew University, and 
 # was written by Aviv Yaish. It is an extension to the specifications given
 # in https://www.nand2tetris.org (Shimon Schocken and Noam Nisan, 2017),
