@@ -44,16 +44,17 @@ class CompilationEngine:
 
     def compile_class_var_dec(self) -> None:
         """Compiles a static declaration or a field declaration."""
-        self.compile_a_single_variable_line(True)
+        self.compile_all_vars_in_dec(True)
 
-    def compile_a_single_variable_line(self, is_class_var_dec: bool) -> None:
+    def compile_all_vars_in_dec(self, is_class_var_dec: bool) -> None:
         self.input_stream.advance()
         type_of_var = "classVarDec" if is_class_var_dec else "varDec"
-        while self.input_stream.token_type() == "KEYWORD" and self.input_stream.keyword() in ["static", "field"]:
+        lst_to_be_in = ["static", "field"] if is_class_var_dec else ['var']
+        while self.input_stream.token_type() == "KEYWORD" and self.input_stream.keyword() in lst_to_be_in:
             self.output_stream.write(f"<{type_of_var}>\n")
             self.output_stream.write(f"<keyword> {self.input_stream.keyword()} </keyword>\n")
             self.input_stream.advance()
-            self.output_stream.write(f"<{self.input_stream.type().lower()}>{self.input_stream.identifier()}</{self.input_stream.type().lower()}>\n")
+            self.output_stream.write(f"<{self.input_stream.token_type().lower()}>{self.input_stream.identifier()}</{self.input_stream.token_type().lower()}>\n")
             self.input_stream.advance()
             self.output_stream.write(f"<identifier> {self.input_stream.identifier()} </identifier>\n")
             self.input_stream.advance()
@@ -76,7 +77,7 @@ class CompilationEngine:
             self.output_stream.write("<subroutineDec>\n") # Start of subroutine declaration
             self.output_stream.write(f"<keyword> {self.input_stream.keyword()} </keyword>\n") #type: method, constructor, function
             self.input_stream.advance()
-            self.output_stream.write(f"<{self.input_stream.type().lower()}>{self.input_stream.identifier()}</{self.input_stream.type().lower()}>\n") # type: void | type
+            self.output_stream.write(f"<{self.input_stream.token_type().lower()}>{self.input_stream.identifier()}</{self.input_stream.token_type().lower()}>\n") # type: void | type
             self.input_stream.advance()
             self.output_stream.write(f"<identifier> {self.input_stream.identifier()} </identifier>\n") #subroutineName
             self.input_stream.advance()
@@ -100,19 +101,17 @@ class CompilationEngine:
         """
         self.output_stream.write("<parameterList>\n")
         self.input_stream.advance()
-        while True:
-            self.output_stream.write(f"<{self.input_stream.type().lower()}>{self.input_stream.identifier()}</{self.input_stream.type().lower()}>\n")
+        while not self.input_stream.token_type == "SYMBOL" and self.input_stream.symbol() != ')':
+            self.output_stream.write(f"<{self.input_stream.token_type().lower()}>{self.input_stream.identifier()}</{self.input_stream.token_type().lower()}>\n")
             self.input_stream.advance()
             self.output_stream.write(f"<identifier> {self.input_stream.identifier()} </identifier>\n")
             self.input_stream.advance()
-            if not (self.input_stream.token_type() == "SYMBOL" and self.input_stream.symbol() == ","):
-                break
-            self.output_stream.write(f"<symbol> {self.input_stream.symbol()} </symbol>\n")
+            #self.output_stream.write(f"<symbol> {self.input_stream.symbol()} </symbol>\n")
         self.output_stream.write("</parameterList>\n")
 
     def compile_var_dec(self) -> None:
         """Compiles a var declaration."""
-        self.compile_a_single_variable_line(False)
+        self.compile_all_vars_in_dec(False)
 
     def compile_statements(self) -> None:
         """Compiles a sequence of statements, not including the enclosing 
@@ -139,7 +138,7 @@ class CompilationEngine:
         # Your code goes here!
         self.output_stream.write("<doStatement>\n")
         self.output_stream.write(f"<keyword> {self.input_stream.keyword()} </keyword>\n") #do
-        self.output_stream.advance()
+        self.input_stream.advance()
         self.compile_subroutine_call()
         self.output_stream.write(f"<symbol> {self.input_stream.symbol()} </symbol>\n") #;
         self.input_stream.advance()
@@ -211,7 +210,8 @@ class CompilationEngine:
         self.output_stream.write("<returnStatement>\n")
         self.output_stream.write(f"<keyword> {self.input_stream.keyword()} </keyword>\n") #return
         self.input_stream.advance()
-        self.compile_expression()
+        if not (self.input_stream.token_type() == "SYMBOL" and self.input_stream.symbol() == ";"):
+            self.compile_expression()
         self.output_stream.write(f"<symbol> {self.input_stream.symbol()} </symbol>\n") # ;
         self.input_stream.advance()
         self.output_stream.write("</returnStatement>\n")
@@ -250,7 +250,7 @@ class CompilationEngine:
         """
         self.output_stream.write("<expression>\n")
         self.compile_term()
-        while self.input_stream.token_type() == "SYMBOL" and self.input_stream.symbol() in self.input_stream.op:
+        while self.input_stream.token_type() == "SYMBOL" and self.input_stream.symbol() in self.input_stream.ops:
             self.output_stream.write(f"<symbol> {self.input_stream.symbol()} </symbol>\n")
             self.input_stream.advance()
             self.compile_term()
@@ -286,7 +286,7 @@ class CompilationEngine:
             self.compile_expression()
             self.output_stream.write(f"<symbol> {self.input_stream.symbol()} </symbol>\n") # )
             self.input_stream.advance()
-        elif self.input_stream.token_type() == "SYMBOL" and self.input_stream.symbol() in self.input_stream.unary_op:
+        elif self.input_stream.token_type() == "SYMBOL" and self.input_stream.symbol() in self.input_stream.unaryOps:
             self.output_stream.write(f"<symbol> {self.input_stream.symbol()} </symbol>\n")
             self.input_stream.advance()
             self.compile_term()
@@ -304,12 +304,12 @@ class CompilationEngine:
                 self.compile_subroutine_call(first_token = first_token)
             else:
                 self.output_stream.write(f"<identifier> {first_token} </identifier>\n")
-                self.input_stream.advance()
+                
         self.output_stream.write("</term>\n")
 
     def compile_expression_list(self) -> None:
         self.output_stream.write("<expressionList>\n")
-        while self.input_stream.token_type() == "SYMBOL" and self.input_stream.symbol() != ")":
+        while not (self.input_stream.token_type() == "SYMBOL" and self.input_stream.symbol() == ")"):
             self.compile_expression()
             if self.input_stream.token_type() == "SYMBOL" and self.input_stream.symbol() == ",":
                 self.output_stream.write(f"<symbol> {self.input_stream.symbol()} </symbol>\n")

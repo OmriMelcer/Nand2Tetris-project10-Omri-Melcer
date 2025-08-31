@@ -113,7 +113,7 @@ class JackTokenizer:
                         '-', '*', '/', '&', '|', '<', '>', '=', '~', '^', '#']
         self.keywordConstants = ['true', 'false', 'null', 'this']
         self.unaryOps = ['-', '~', '^', '#']
-        self.ops = ['+', '-', '*', '/', '&', '|', '<', '>', '=']
+        self.ops = ['+', '-', '*', '/', '&', '|', '<', '>', '=', "&lt;", "&gt;", "&amp;"]
         self.lines_length = len(self.input_lines)
         self.current_line_tokens = []
 
@@ -153,29 +153,57 @@ class JackTokenizer:
         return True
 
     def split_line_to_tokens(self) -> None:
-        lst = []
-        lst = self.current_token.split()
-        word_until_symbol = ""
-        for word in lst:
-            index = 0
-            word_until_symbol = ""
-            while (index < len(word)):
-                char = word[index]
-                if char not in self.symbols:
-                    word_until_symbol += char
-                else:
-                    if word_until_symbol != "":
-                        self.current_line_tokens.append(word_until_symbol)
-                    word_until_symbol = ""
-                    self.current_line_tokens.append(char)
-                index += 1
-        if word_until_symbol != "":
-            self.current_line_tokens.append(word_until_symbol)
+        self.current_line_tokens = []
+        words_until_break = ""
+        index = 0
+        while index < len(self.current_token):
+            char = self.current_token[index]
+            if char in self.symbols:
+                if words_until_break != "":
+                    self.current_line_tokens.append(words_until_break)
+                    words_until_break = ""
+                self.current_line_tokens.append(char)
+            elif char == '"':
+                closing_index = self.current_token.find('"', index + 1)
+                string_const = self.current_token[index:closing_index + 1]
+                self.current_line_tokens.append(string_const)
+                index = closing_index
+            elif char.isspace():
+                if words_until_break != "":
+                    self.current_line_tokens.append(words_until_break)
+                    words_until_break = ""
+            else:
+                words_until_break += char
+            index += 1
+        if words_until_break != "":
+            self.current_line_tokens.append(words_until_break)
+        
+
+    # def split_line_to_tokens(self) -> None:
+    #     lst = []
+        
+    #     lst = self.current_token.split()
+    #     word_until_symbol = ""
+    #     for word in lst:
+    #         index = 0
+    #         word_until_symbol = ""
+    #         while (index < len(word)):
+    #             char = word[index]
+    #             if char not in self.symbols:
+    #                 word_until_symbol += char
+    #             else:
+    #                 if word_until_symbol != "":
+    #                     self.current_line_tokens.append(word_until_symbol)
+    #                 word_until_symbol = ""
+    #                 self.current_line_tokens.append(char)
+    #             index += 1
+    #         if word_until_symbol != "":
+    #             self.current_line_tokens.append(word_until_symbol)
 
     def handle_comment_block(self) -> bool:
         """Handles multi-line comments in the input."""
         if not self.current_token.startswith("/**"):
-            return False
+            return True
         while not self.current_token.endswith("*/"):
             self.delete_current_command()
             self.current_row_index += 1
@@ -253,6 +281,12 @@ class JackTokenizer:
             symbol: '{' | '}' | '(' | ')' | '[' | ']' | '.' | ',' | ';' | '+' | 
               '-' | '*' | '/' | '&' | '|' | '<' | '>' | '=' | '~' | '^' | '#'
         """
+        if self.current_token == "<":
+            return "&lt;"
+        if self.current_token == ">":
+            return "&gt;"
+        if self.current_token == "&":
+            return "&amp;"
         return self.current_token
 
     def identifier(self) -> str:

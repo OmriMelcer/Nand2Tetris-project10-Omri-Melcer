@@ -46,7 +46,12 @@ if "__main__" == __name__:
         filename, extension = os.path.splitext(input_path)
         if extension.lower() != ".jack":
             continue
-        output_path = filename + ".xml"
+        directory_of_filename = os.path.dirname(filename)
+        name_of_file = os.path.basename(filename)   
+        output_dir = os.path.join(directory_of_filename, "generated_XML")
+        os.makedirs(output_dir, exist_ok=True)
+        output_path = os.path.join(output_dir, name_of_file + ".xml")
+        #output_path = filename + ".xml"
         with open(input_path, 'r') as input_file, \
                 open(output_path, 'w') as output_file:
             analyze_file(input_file, output_file)
