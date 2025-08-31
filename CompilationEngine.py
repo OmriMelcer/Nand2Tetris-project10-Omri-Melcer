@@ -38,7 +38,7 @@ class CompilationEngine:
         self.output_stream.write(f"<symbol> {self.input_stream.symbol()} </symbol>\n")
         self.compile_class_var_dec()
         self.compile_subroutine()
-        self.input_stream.advance() #TODO check if needed
+        #self.input_stream.advance() #TODO check if needed
         self.output_stream.write(f"<symbol> {self.input_stream.symbol()} </symbol>\n")
         self.output_stream.write("</class>\n")
 
