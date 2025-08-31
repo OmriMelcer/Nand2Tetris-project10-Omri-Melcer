@@ -9,7 +9,8 @@ import typing
 from JackTokenizer import JackTokenizer
 
 class CompilationEngine:
-    """Gets input from a JackTokenizer and emits its parsed structure into an
+    """
+    Gets input from a JackTokenizer and emits its parsed structure into an
     output stream.
     """
 
@@ -37,16 +38,19 @@ class CompilationEngine:
         self.output_stream.write(f"<symbol> {self.input_stream.symbol()} </symbol>\n")
         self.compile_class_var_dec()
         self.compile_subroutine()
-        self.input_stream.advance()
+        self.input_stream.advance() #TODO check if needed
         self.output_stream.write(f"<symbol> {self.input_stream.symbol()} </symbol>\n")
         self.output_stream.write("</class>\n")
 
     def compile_class_var_dec(self) -> None:
         """Compiles a static declaration or a field declaration."""
-        # * the current token after return is the next one to use, no need to call advance() after use.
+        self.compile_a_single_variable_line(True)
+
+    def compile_a_single_variable_line(self, is_class_var_dec: bool) -> None:
         self.input_stream.advance()
+        type_of_var = "classVarDec" if is_class_var_dec else "varDec"
         while self.input_stream.token_type() == "KEYWORD" and self.input_stream.keyword() in ["static", "field"]:
-            self.output_stream.write("<classVarDec>\n")
+            self.output_stream.write(f"<{type_of_var}>\n")
             self.output_stream.write(f"<keyword> {self.input_stream.keyword()} </keyword>\n")
             self.input_stream.advance()
             self.output_stream.write(f"<{self.input_stream.type().lower()}>{self.input_stream.identifier()}</{self.input_stream.type().lower()}>\n")
@@ -59,7 +63,7 @@ class CompilationEngine:
                 self.output_stream.write(f"<identifier> {self.input_stream.identifier()} </identifier>\n")
                 self.input_stream.advance()
             self.output_stream.write(f"<symbol> {self.input_stream.symbol()} </symbol>\n")
-            self.output_stream.write("</classVarDec>\n")
+            self.output_stream.write(f"</{type_of_var}>\n")
             self.input_stream.advance()
 
     def compile_subroutine(self) -> None:
@@ -96,7 +100,6 @@ class CompilationEngine:
         """
         self.output_stream.write("<parameterList>\n")
         self.input_stream.advance()
-        
         while True:
             self.output_stream.write(f"<{self.input_stream.type().lower()}>{self.input_stream.identifier()}</{self.input_stream.type().lower()}>\n")
             self.input_stream.advance()
@@ -109,25 +112,78 @@ class CompilationEngine:
 
     def compile_var_dec(self) -> None:
         """Compiles a var declaration."""
-        # Your code goes here!
-        pass
+        self.compile_a_single_variable_line(False)
 
     def compile_statements(self) -> None:
         """Compiles a sequence of statements, not including the enclosing 
         "{}".
         """
-        # Your code goes here!
-        pass
+        self.output_stream.write("<statements>\n")
+        while self.input_stream.token_type() == "KEYWORD" and self.input_stream.keyword() in ["let", "if", "while", "do", "return"]:
+            if self.input_stream.keyword() == "let":
+                self.compile_let()
+            elif self.input_stream.keyword() == "if":
+                self.compile_if()
+            elif self.input_stream.keyword() == "while":
+                self.compile_while()
+            elif self.input_stream.keyword() == "do":
+                self.compile_do()
+            elif self.input_stream.keyword() == "return":
+                self.compile_return()
+            # TODO: check if advanced is need here.
+            self.input_stream.advance()
+        self.output_stream.write("</statements>\n")
 
     def compile_do(self) -> None:
         """Compiles a do statement."""
         # Your code goes here!
-        pass
+        self.output_stream.write("<doStatement>\n")
+        self.output_stream.write(f"<keyword> {self.input_stream.keyword()} </keyword>\n") #do
+        self.compile_subroutine_call()
+        self.input_stream.advance()
+        self.output_stream.write(f"<symbol> {self.input_stream.symbol()} </symbol>\n") #;
+        self.output_stream.write("</doStatement>\n")
+
+    def compile_subroutine_call(self) -> None:
+        """
+        starts by using advanced i.e in the token before the subroutine call.
+        returns at the ) token as current
+        """
+        self.input_stream.advance()
+        self.output_stream.write(f"<identifier> {self.input_stream.identifier()} </identifier>\n")
+        class_or_subroutine = self.input_stream.identifier() #className | subroutineName
+        self.input_stream.advance()
+        self.output_stream.write(f"<symbol> {self.input_stream.symbol()} </symbol>\n")
+        while self.input_stream.symbol() == ".":
+            self.input_stream.advance()
+            self.output_stream.write(f"<identifier> {self.input_stream.identifier()} </identifier>\n")
+            self.input_stream.advance()
+            self.output_stream.write(f"<symbol> {self.input_stream.symbol()} </symbol>\n") # . or ) in the last iteration
+        self.input_stream.advance()
+        self.compile_expression_list()
+        self.output_stream.write(f"<symbol> {self.input_stream.symbol()} </symbol>\n") # )
+
 
     def compile_let(self) -> None:
         """Compiles a let statement."""
         # Your code goes here!
-        pass
+        self.output_stream.write("<letStatement>\n")
+        self.output_stream.write(f"<keyword> {self.input_stream.keyword()} </keyword>\n") #let
+        self.input_stream.advance()
+        self.output_stream.write(f"<identifier> {self.input_stream.identifier()} </identifier>\n") # varName
+        self.input_stream.advance()
+        self.output_stream.write(f"<symbol> {self.input_stream.symbol()} </symbol>\n") # = or [
+        if self.input_stream.symbol() == "[":
+            self.input_stream.advance()
+            self.compile_expression() #TODO: should finish after the advancing to the ] token
+            self.output_stream.write(f"<symbol> {self.input_stream.symbol()} </symbol>\n") # ]
+            self.input_stream.advance()
+            self.output_stream.write(f"<symbol> {self.input_stream.symbol()} </symbol>\n") # =
+        self.input_stream.advance()
+        self.compile_expression()
+        
+        self.output_stream.write(f"<symbol> {self.input_stream.symbol()} </symbol>\n") # ;
+        self.output_stream.write("</letStatement>\n")
 
     def compile_while(self) -> None:
         """Compiles a while statement."""
@@ -145,7 +201,10 @@ class CompilationEngine:
         pass
 
     def compile_expression(self) -> None:
-        """Compiles an expression."""
+        """Compiles an expression.
+        Should finish at the ) or ] token as current
+        starts after advancing to the first token
+        """
         # Your code goes here!
         pass
 

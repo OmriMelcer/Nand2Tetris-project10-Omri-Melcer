@@ -58,8 +58,8 @@ class JackTokenizer:
     - subroutineDec: ('constructor' | 'function' | 'method') ('void' | type) 
     - subroutineName '(' parameterList ')' subroutineBody
     - parameterList: ((type varName) (',' type varName)*)?
-    - subroutineBody: '{' varDec* statements '}'
     - varDec: 'var' type varName (',' varName)* ';'
+    - subroutineBody: '{' varDec* statements '}'
     - className: identifier
     - subroutineName: identifier
     - varName: identifier
