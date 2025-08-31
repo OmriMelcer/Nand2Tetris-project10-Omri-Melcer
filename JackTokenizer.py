@@ -145,8 +145,6 @@ class JackTokenizer:
         self.current_token = self.input_lines[self.current_row_index]
         if not self.handle_comments_and_blanks():
             return False
-        if not self.handle_comment_block():
-            return False
         self.current_token = self._remove_comments_and_blanks(self.current_token)
         self.split_line_to_tokens()
         self.current_token = self.current_line_tokens.pop(0)
@@ -202,19 +200,25 @@ class JackTokenizer:
 
     def handle_comment_block(self) -> bool:
         """Handles multi-line comments in the input."""
-        if not self.current_token.strip().startswith("/**"):
-            return True
         while not self.current_token.strip().endswith("*/"):
             self.delete_current_command()
             self.current_row_index += 1
             if not self.has_more_tokens():
                 return False
             self.current_token = self.input_lines[self.current_row_index]
+        self.delete_current_command()
+        self.current_row_index += 1
+        self.current_token = self.input_lines[self.current_row_index]
         return True
 
     def handle_comments_and_blanks(self) -> bool:
         """Handles comments and blank lines in the input."""
-        while self.current_token.strip() == "" or self.current_token.strip().startswith("//") or self.current_token.strip().startswith("/**"):
+        while self.current_token.strip() == "" or self.current_token.strip().startswith("//") or \
+        (self.current_token.strip().startswith("/**")) or \
+            (self.current_token.strip().startswith("/*") and self.current_token.strip().endswith("*/")):
+            if self.current_token.strip().startswith("/**") and not self.current_token.strip().endswith("*/"):
+                if not self.handle_comment_block():
+                    return False
             self.delete_current_command()
             self.current_row_index += 1
             if not self.has_more_tokens():
