@@ -206,10 +206,7 @@ class JackTokenizer:
             if not self.has_more_tokens():
                 return False
             self.current_token = self.input_lines[self.current_row_index]
-        self.delete_current_command()
-        self.current_row_index += 1
-        self.current_token = self.input_lines[self.current_row_index]
-        return True
+        return self.has_more_tokens()
 
     def handle_comments_and_blanks(self) -> bool:
         """Handles comments and blank lines in the input."""

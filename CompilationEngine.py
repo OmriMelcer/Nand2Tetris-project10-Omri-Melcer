@@ -40,7 +40,7 @@ class CompilationEngine:
         self.compile_subroutine()
         #self.input_stream.advance() #TODO check if needed
         self.output_stream.write(f"<symbol> {self.input_stream.symbol()} </symbol>\n")
-        self.output_stream.write("</class>\n")
+        self.output_stream.write("</class>")
 
     def compile_class_var_dec(self) -> None:
         """Compiles a static declaration or a field declaration."""
