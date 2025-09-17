@@ -19,11 +19,11 @@ class JackTokenizer:
     tokens may be separated by an arbitrary number of whitesvalidpace characters, 
     and comments, which are ignored. There are three possible comment formats: 
     /* comment until closing */ , /** API comment until closing */ , and 
-    // comment until the line’s end.
+    // comment until the line's end.
 
-    - ‘xxx’: quotes are used for tokens that appear verbatim (‘terminals’).
+    - 'xxx': quotes are used for tokens that appear verbatim ('terminals').
     - xxx: regular typeface is used for names of language constructs 
-           (‘non-terminals’).
+           ('non-terminals').
     - (): parentheses are used for grouping of language constructs.
     - x | y: indicates that either x or y can appear.
     - x?: indicates that x appears 0 or 1 times.
@@ -300,12 +300,12 @@ class JackTokenizer:
             symbol: '{' | '}' | '(' | ')' | '[' | ']' | '.' | ',' | ';' | '+' | 
               '-' | '*' | '/' | '&' | '|' | '<' | '>' | '=' | '~' | '^' | '#'
         """
-        if self.current_token == "<":
-            return "&lt;"
-        if self.current_token == ">":
-            return "&gt;"
-        if self.current_token == "&":
-            return "&amp;"
+        # if self.current_token == "<":
+        #     return "&lt;"
+        # if self.current_token == ">":
+        #     return "&gt;"
+        # if self.current_token == "&":
+        #     return "&amp;"
         return self.current_token
 
     def identifier(self) -> str:
